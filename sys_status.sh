@@ -17,7 +17,7 @@ echo ""
 # For aesthetic purposes the current time is retrieved and assigned to a variable to let the user know the
 # current time that the script ran
 
-time_date=$(timedatectl | grep "Universal time" | awk '{print $4, $5}')
+time_date=$(timedatectl | grep "Local time" | awk '{print $4, $5}')
 
 echo "As of $time_date: "
 
