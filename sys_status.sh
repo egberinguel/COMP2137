@@ -11,7 +11,6 @@ cpu_full=100.00
 cpu_lvl=$(echo "$cpu_full - $cpu_idle" | bc)
 
 echo "Current CPU Level: $cpu_lvl%"
-
 echo ""
 
 # For aesthetic purposes the current time is retrieved and assigned to a variable to let the user know the

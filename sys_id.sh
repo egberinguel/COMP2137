@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The first command fetches the vm's hostname before sending it to the file
-# descriptor 0 or the STDOUT which is the computer's monitor using the echo
+# descriptor 1 or the STDOUT which is the computer's monitor using the echo
 # command.
 
 echo -e "  Hostname:\t$(hostname)\n"
