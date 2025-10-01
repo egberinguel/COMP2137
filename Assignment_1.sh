@@ -34,7 +34,7 @@ dns_info=$(cat /etc/resolv.conf | grep nameserver | cut -d' ' -f2-)
 login_users=$(w -hs | awk '{ print $1 }')
 
 # Displays free disk space
-disk_space=$(df -hl --output=source,avail -x tmpfs | sed -e '1d')
+disk_space=$(df -hl --output=source,avail -x tmpfs | sed -e '1d' | sed 's/^/\t\t/g')
 
 # Displays how many processes are running in the background
 process_count=$(ps -sh | wc -l)
@@ -43,7 +43,8 @@ process_count=$(ps -sh | wc -l)
 load_ave=$(uptime | awk -F'load average: ' '{ print $2 }')
 
 # Displays open ports
-ports_open=$(ss -tulnH | awk '{ print $5 }' | grep -Eo [0-9]+$ | tr '\n' '\t')
+ports_open=$(ss -tulnH | awk '{ print $5 }' | grep -Eo [0-9]+$ | sed -z 's/\n/, /g;s/, $/\n/')
+
 # Displays firewall status
 ufw_status=$(sudo ufw status | cut -d' ' -f2)
 
@@ -67,10 +68,8 @@ DNS Server: $dns_info
 System Status
 ------------------
 Users Logged In: $login_users
-
 Disk Space: 
 $disk_space
-
 Process Count: $process_count
 Load Averages: $load_ave
 Listening Network Ports: $ports_open 
