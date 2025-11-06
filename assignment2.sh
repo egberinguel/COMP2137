@@ -109,39 +109,37 @@ function check_four {
 }
 
 function check_five {
+	total_keys=0
+	total_rsa=0
+	total_ed25519=0
 	for users_accounts in ${users_to_create[@]}; do
 		if [ -f /home/$users_accounts/.ssh/key_rsa ] && [ -f /home/$users_accounts/.ssh/key_rsa.pub ]; then
-			echo "RSA Keys created properly for $users_accounts"
-			check_five_rsa_value=1
-		else
-			echo "RSA Keys missing for $users_accounts"
-			check_five_rsa_value=0
+			total_keys+=1
+			total_rsa+=1
+			# echo "RSA Keys created properly for $users_accounts"
+		# else
+			# echo "RSA Keys missing for $users_accounts"
 		fi
 			
 		if [ -f /home/$users_accounts/.ssh/key_ed25519 ] && [ -f /home/$users_accounts/.ssh/key_ed25519.pub ]; then
-			echo "ED25519 Keys created properly for $userusers_accounts_acc"
-			check_five_ed25519_value=1
-		else
-			echo "ED25519 Keys missing for $users_accounts"
-			check_five_ed25519_value=0
+			total_keys+=1
+			total_ed25519+=1
+			# echo "ED25519 Keys created properly for $userusers_accounts_acc"
+		# else
+			# echo "ED25519 Keys missing for $users_accounts"
 		fi
-		
-		echo ""
 	done
+	
+	echo -e "5. RSA keys present, $total_rsa.\n   ED25519 keys present, $total_ed25519.\n   Overall keys created, $total_keys."
 }
 
 check_one
-echo ""
 check_two
-echo ""
 check_three
-echo ""
 check_four
-echo ""
 check_five
-echo ""
 
----------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------
 # MAIN
 
 
