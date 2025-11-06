@@ -18,20 +18,14 @@
 # Call system checks first to evaluate needed changes
 # Create a function for each check
 
-step_one=$(grep -we server1$ /etc/hosts | awk '{ print $1 }')
+hosts_file=$(grep -we server1$ /etc/hosts | awk '{ print $1 }')
 
 # First check return FALSE if server1 is not set to 192.168.16.21
 function check_one {
-	if [ $step_one != "192.168.16.21" ]; then
-		check_one_value=0
+	if [ $hosts_file != "192.168.16.21" ]; then
+		echo "1. Need to adjust /etc/hosts file for server1 as 192.168.16.241"
 	else
-		check_one_value=1
-	fi
-	
-	if [ $check_one_value -ne 1 ]; then
-		echo "First check failed:	Need to adjust /etc/hosts file for server1 as 192.168.16.241"
-	else
-		echo "First check success!"
+		echo "1. First check success!"
 	fi
 }
 
@@ -47,36 +41,32 @@ function check_two {
 	for ip_tbe in ${ip_addresses[@]}; do
 		address_exist=0
 		if [ $ip_tbe == "192.168.16.21/24" ]; then
-			check_two_value=1
 			$address_exist=1
-			echo "Second check success!"
+			echo "2. Second check success!"
 			break
 		fi
 	done
 	
 	if [ $address_exist -eq 0 ]; then
-		check_two_value=0
-		echo "Second check failed:	IP Address is not set to 192.168.16.21/24"
+		echo "2. IP Address is not set to 192.168.16.21/24"
 	fi
 }
 
 function check_three {
 	dpkg -l | grep -E '^ii' | grep "apache2 "
 	if [ $? -ne 0 ]; then
-		check_three_apache_value=0
-		echo "Apache check failed:	Apache not installed properly"
+		echo "3a. Apache not installed properly"
 	else
-		check_three_apache_value=1
-		echo "Apache is installed already"
+		echo "3a. Apache is installed already"
 	fi
 	
 	dpkg -l | grep -E '^ii' | grep "apache2 "
 	if [ $? -ne 0 ]; then
 		check_three_squid_value=0
-		echo "Squid check failed:	Squid not installed properly"
+		echo "3b. Squid not installed properly"
 	else
 		check_three_squid_value=1
-		echo "Apache is installed already"
+		echo "3b. Apache is installed already"
 	fi
 }
 
@@ -102,15 +92,20 @@ function check_four {
 			# If user is found in /etc/passwd, then user is tagged as created
 			if [ $users_tbc == $users ]; then
 				echo "$users_tbc is created"
-				is_created=1
+				is_created+=1
 			fi
 		done
 		# Space for clarification
-		# After the for loop, if tag is still 0 then account is missing
-		if [ $is_created -ne 1 ]; then
-			echo "$users_tbc is missing"
-		fi
 	done
+	
+	# After the for loop, if tag is still 0 then account is missing
+	if [ $is_created -eq 0 ]; then
+		echo "4. No user accounts have been created yet"
+	elif [ $is_created -lt 11 ]; then
+		echo "4. $(( 11 - $is_created )) users are missing"
+	else
+		echo "4. All user accounts are present"
+	fi
 }
 
 function check_five {
@@ -135,19 +130,19 @@ function check_five {
 	done
 }
 
-check_one()
+check_one
+echo ""
+check_two
+echo ""
+check_three
+echo ""
+check_four
+echo ""
+check_five
+echo ""
 
-
-
-"""
-check_one_value=FALSE
-check_two_value=FALSE
-check_three_apache_value=FALSE
-check_three_squid_value=FALSE
-check_four_value=FALSE
-check_five_value=FALSE
-"""
-
+---------------------------------------------------------------------------------------------------------------
+# MAIN
 
 
 # Might(?) need to use for loop here or combine with previous step
