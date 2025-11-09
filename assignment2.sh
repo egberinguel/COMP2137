@@ -83,7 +83,7 @@ function check_three {
 		echo "3b. Squid not installed properly"
 	else
 		check_three_squid_value=1
-		echo "3b. Apache is installed already"
+		echo "3b. Squid is installed already"
 	fi
 }
 
@@ -184,6 +184,17 @@ else
 fi
 
 # Figure out how to verify check_three
+check_three
+if [ $check_three_apache_value = 0 ]; then
+	sudo apt install apache2 -y
+else
+	continue
+
+if [ $check_three_squid_value = 0 ]; then
+	sudo apt install squid -y
+else
+	continue
+	
 
 check_four
 check_four_rv=$?
