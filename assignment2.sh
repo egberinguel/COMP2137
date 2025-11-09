@@ -228,7 +228,7 @@ elif [ $check_four_rv -eq 1 ]; then
 		
 		# Check if user is 'dennis'
 		if [ $each_user == "dennis" ]; then
-			usermod -aG $each_user root
+			usermod -aG sudo $each_user
 			echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG4rT3vTt99Ox5kndS4HmgTrKBT8SKzhK4rhGkEVGlCI student@generic-vm" >> /home/$each_user/.ssh/authorized_keys
 		fi
 	done
