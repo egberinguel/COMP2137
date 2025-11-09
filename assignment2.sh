@@ -62,7 +62,7 @@ function check_two {
 }
 
 function check_three {
-	dpkg -l | grep -E '^ii' | grep "apache2 " & > /dev/null
+	dpkg -l | grep -E '^ii' | grep "apache2 " > /dev/null
 	if [ $? -ne 0 ]; then
 		check_three_apache_value=0
 		echo "3a. Apache not installed yet"
@@ -71,7 +71,7 @@ function check_three {
 		echo "3a. Apache is installed"
 	fi
 	
-	dpkg -l | grep -E '^ii' | grep "squid " & > /dev/null
+	dpkg -l | grep -E '^ii' | grep "squid " > /dev/null
 	if [ $? -ne 0 ]; then
 		check_three_squid_value=0
 		echo "3b. Squid not installed yet"
@@ -171,6 +171,7 @@ if [ $? -ne 0 ]; then
 		echo "Changing IP Address to 192.168.16.21"
 		sed -i -E '0,/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/{s/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/192\.168\.16\.21/}' /etc/netplan/10-lxc.yaml
 		netplan apply
+		echo ""
 		
 		if [ $? -ne 0 ]; then
 			echo ""
@@ -189,22 +190,26 @@ fi
 
 # Figure out how to verify check_three
 check_three
-if [ $check_three_apache_value = 0 ]; then
-	echo "Installing apache..." && sudo apt install apache2 -y &
+if [ $check_three_apache_value -eq 0 ]; then
+	echo "Installing apache..."
+	sudo apt install apache2 -y > /dev/null
 	if [ $? -ne 0 ]; then
 		echo ""
 		echo "Unable to reach apt repository. Might be having internet issues"
 		exit 1
 	fi
+	wait
 fi
 
-if [ $check_three_squid_value = 0 ]; then
-	echo "Installing squid..." && sudo apt install squid -y &
+if [ $check_three_squid_value -eq 0 ]; then
+	echo "Installing squid..."
+	sudo apt install squid -y > /dev/null
 	if [ $? -ne 0 ]; then
 		echo ""
 		echo "Unable to reach apt repository. Might be having internet issues"
 		exit 1
 	fi
+	wait
 fi
 
 
