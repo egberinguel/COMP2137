@@ -1,33 +1,5 @@
 #!/bin/bash
 
-"""
-Create a script named configure-host.sh to configure some basic host settings. The settings to configure will be given on the command line. If the settings are already in place, the script will do nothing and make no output unless running in verbose mode. Any settings not already in place will be configured and applied, producing no output unless errors are encountered, or running in verbose mode. The script must ignore TERM, HUP and INT signals.
-
-Command line arguments to be accepted:
--verbose
-•	this option will enable verbose output while the script runs
-
--name desiredName
-•	 this option will confirm the host has the desired name, updating it if necessary in both the /etc/hosts file and the /etc/hostname file
-•	 it will also apply the desired name to the running machine if it is being changed from an existing setting
-•	 if running in verbose mode, the script will tell the user about any changes made, or if no changes were necessary
-•	 if not running in verbose mode, the script will only produce output if errors are encountered
-•	 if changes are made, an entry is sent to the system log using the logger program describing the changes
-
--ip desiredIPAddress
-•	 this option will confirm the host's laninterface has the desired IP address, updating it if necessary in both the /etc/hosts file and the netplan file
-•	 it will also apply the desired IP address to the running machine if it is being changed from an existing setting
-•	 if running in verbose mode, the script will tell the user about any changes made, or if no changes were necessary
-•	 if not running in verbose mode, the script will only produce output if errors are encountered
-•	 if changes are made, an entry is sent to the system log using the logger program describing the changes
-
--hostentry desiredName desiredIPAddress
-•	 this option will confirm the host name and IP address are in the /etc/hosts file, updating it if necessary
-•	 if running in verbose mode, the script will tell the user about any changes made, or if no changes were necessary
-•	 if not running in verbose mode, the script will only produce output if errors are encountered
-•	 if changes are made, an entry is sent to the system log using the logger program describing the changes
-"""
-
 # Objectives:
 
 #1. Script should not run without options, display help instead
@@ -66,16 +38,22 @@ ${basename $0} [-h] [-name hostname] [-ip ip_address] [-hostentry hostentry]
 EOF
 }
 
-function hosts_check {
-
+function hostscheck {
+	if [ ! -f /etc/hosts ]; then
+		echo "/etc/hosts file does not exist! Please ask for system administrator assistance."
+		exit 1
+	else
+		# Add $ if not including mgmt entries
+		host_check=$(grep -E "server[0-9]+" /etc/hosts)
+	fi
 }
 
-function netplan_check {
-
+function netplancheck {
+	echo "netplan check"
 }
 
-function hostname_check {
-
+function hostnamecheck {
+	# Must return a variable
 }
 
 while [ $# -gt 0 ]; do
@@ -85,17 +63,28 @@ while [ $# -gt 0 ]; do
 			exit
 			;;
 		-name )
-			hosts_check
-			hostname_check
+			hostscheck
+			if [ $host_check != $2 ]; then
+				sed -i.bak -e 's/server[0-9]\+/hostname/' /etc/hosts
+			else
+				echo "Host entry is already set as $2"
+			fi
+			
+			hostnamecheck
+			if [ $hostname_check != $2 ]; then
+				hostnamectl hostname $2
+			else
+				echo "Hostname is already set as $2"
+			fi
 			exit
 			;;
 		-ip )
-			netplan_check
-			hosts_check
+			netplancheck
+			hostscheck
 			exit
 			;;
 		-hostentry )
-			hosts_check
+			hostscheck
 			exit
 			;;
 		* )
@@ -104,6 +93,7 @@ while [ $# -gt 0 ]; do
 			;;
 	esac
 	# Maybe shift twice because of arguments???
-	shift
+	shift 2
 done
-	
+
+
