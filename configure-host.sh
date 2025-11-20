@@ -51,19 +51,27 @@ function hostscheck {
 	fi
 }
 
-function netplancheck {
+function ip_setting {
 	if [ ! -f /etc/netplan/*.yaml ]; then
 		echo "There are no files existing in /etc/netplan/ ! Please ask for system administrator assistance."
 		exit 1
 	else
 		if [ $(ls -l /etc/netplan | wc -l) -gt 2 ]; then
-			echo "This script assumes there is only file in /etc/netplan"
+			echo "This script assumes there is only 1 file in /etc/netplan"
 			echo "Exiting..."
+			wait 2
 			exit 1
 		else
 			netplan_file="$(ls /etc/netplan)"
 			current_address=$(grep -oE "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" /etc/netplan/* | head -n 1)
 		fi
+	fi
+	
+	if [ ! -f /etc/hosts ]; then
+		echo "/etc/hosts does not exist! Please ask for system administrator assistance."
+		exit 1
+	else
+		ip_entry=$(grep -B 1 mgmt /etc/hosts | awk '{ print $1 }' | head -n 1)
 	fi
 }
 
@@ -76,6 +84,11 @@ function hostnamecheck {
 	fi
 }
 
+if [ $# -eq 0 ]; then
+	display_help
+	exit
+fi
+
 while [ $# -gt 0 ]; do
 	case "$1" in
 		-h )
@@ -87,7 +100,7 @@ while [ $# -gt 0 ]; do
 			
 			if [ "$unique_system_name" != "$2" ]; then
 				echo "Changing hostname entry in /etc/hosts"
-				sed -i.bak "s/$unique_system_name/$2/" /etc/hosts
+				sed -i "s/$unique_system_name/$2/" /etc/hosts
 			else
 				echo "Host entry is already set as $2"
 			fi
@@ -98,64 +111,70 @@ while [ $# -gt 0 ]; do
 			else
 				echo "Hostname is already set as $2"
 			fi
-			exit
+			
+			shift
 			;;
 		-ip )
-			netplancheck
+			ip_setting
 			if [ "$current_address" != "$2" ]; then
 				echo "Adjusting netplan configuration"
-				sed -i.bak "s/$current_address/$2/" $netplan_file
+				sed -i "s/$current_address/$2/" /etc/netplan/$netplan_file
 				netplan apply 2> /etc/null
 				if [ $? -ne 0 ]; then
 					echo "netplan failed to apply settings!"
-					mv $netplan_file".bak" $netplan_file
+					mv /etc/netplan/$netplan_file".bak" /etc/netplan/$netplan_file
 					exit 1
 				fi
 			else
 				echo "System netplan address is already set as $2"
 			fi
 			
-			hostscheck
-			if [ "$unique_system_name" != "$2" ]; then
-				echo "Changing "
-				sed -i.bak "s/$unique_system_name/$2/" /etc/hosts
+			if [ "$ip_entry" != "$2" ]; then
+				echo "Changing address entry in /etc/hosts"
+				sed -i.bak "s/$ip_entry/$2/" /etc/hosts
 			else
 				echo "Host entry is already set as $2"
 			fi
-			exit
+			
+			shift
 			;;
 		-hostentry )
 			hostscheck
 			address_check=$(grep mgmt /etc/hosts -B 1 | awk '{ print $1 }'| head -n 1)
-			if [[ "$2" != ^[0-9]+\.[0-9]\.[0-9]\.[0-9]+$ ]]; then
+			if [[ ! $2 =~ ^[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*$ ]]; then
 				if [ "$unique_system_name" != "$2" ]; then
-					echo "Changing hostname entry in /etc/hosts"
+					echo "Changing hostname entry in /etc/hosts to $unique_system_name"
 					sed -i "s/$unique_system_name/$2/" /etc/hosts
 				else
 					echo "Host entry is already set as $2"
 				fi
 				
 				if [ "$address_check" != "$3" ]; then
-					echo "Changing address entry in /etc/hosts"
+					echo "Changing address entry in /etc/hosts to $address_check"
 					sed -i.bak "s/$address_check/$3/" /etc/hosts
 				else
 					echo "Address entry is already set as $3"
 				fi
+				
 			else
 				if [ "$unique_system_name" != "$3" ]; then
-					echo "Changing hostname entry in /etc/hosts"
-					sed -i "s/$unique_system_name/$2/" /etc/hosts
+					echo "Changing hostname entry in /etc/hosts to $unique_system_name"
+					sed -i "s/$unique_system_name/$3/" /etc/hosts
 				else
 					echo "Host entry is already set as $3"
 				fi
 				
 				if [ "$address_check" != "$2" ]; then
-					echo "Changing address entry in /etc/hosts"
-					sed -i.bak "s/$address_check/$3/" /etc/hosts
+					echo "Changing address entry in /etc/hosts to $address_check"
+					sed -i.bak "s/$address_check/$2/" /etc/hosts
 				else
 					echo "Address entry is already set as $2"
 				fi
 			fi
+			shift 2
+			;;
+		-verbose )
+			echo "Verbose"
 			exit
 			;;
 		* )
@@ -164,9 +183,7 @@ while [ $# -gt 0 ]; do
 			exit 1
 			;;
 	esac
-	# Maybe shift twice because of arguments???
-	shift 2
+	shift
 done
 
-echo ""
-display_help
+exit
