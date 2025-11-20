@@ -46,12 +46,8 @@ function hostscheck {
 		echo "/etc/hosts file does not exist! Please ask for system administrator assistance."
 		exit 1
 	else
-		# Add $ if not including mgmt entries
 		entry_check=$(grep -B 1 mgmt /etc/hosts | awk '{ print $2 }' | head -n 2)
 		unique_system_name=$(grep -B 1 mgmt /etc/hosts | awk '{ print $2 }' | head -n 1)
-		for names in $entry_check; do
-			host_check+=("$names")
-		done
 	fi
 }
 
@@ -89,10 +85,8 @@ while [ $# -gt 0 ]; do
 		-name )
 			hostscheck
 			
-			# Might need to change localhost instead
-			# Scenario: what if server1 is changed and ip address is changed?
-			if [ "$host_check" != "$2" ]; then
-				echo "Changing "
+			if [ "$unique_system_name" != "$2" ]; then
+				echo "Changing hostname entry in /etc/hosts"
 				sed -i.bak "s/$unique_system_name/$2/" /etc/hosts
 			else
 				echo "Host entry is already set as $2"
@@ -122,7 +116,7 @@ while [ $# -gt 0 ]; do
 			fi
 			
 			hostscheck
-			if [ "$host_check" != "$2" ]; then
+			if [ "$unique_system_name" != "$2" ]; then
 				echo "Changing "
 				sed -i.bak "s/$unique_system_name/$2/" /etc/hosts
 			else
@@ -134,7 +128,7 @@ while [ $# -gt 0 ]; do
 			hostscheck
 			address_check=$(grep mgmt /etc/hosts -B 1 | awk '{ print $1 }'| head -n 1)
 			if [[ "$2" != ^[0-9]+\.[0-9]\.[0-9]\.[0-9]+$ ]]; then
-				if [ "$host_check" != "$2" ]; then
+				if [ "$unique_system_name" != "$2" ]; then
 					echo "Changing hostname entry in /etc/hosts"
 					sed -i "s/$unique_system_name/$2/" /etc/hosts
 				else
@@ -148,7 +142,7 @@ while [ $# -gt 0 ]; do
 					echo "Address entry is already set as $3"
 				fi
 			else
-				if [ "$host_check" != "$3" ]; then
+				if [ "$unique_system_name" != "$3" ]; then
 					echo "Changing hostname entry in /etc/hosts"
 					sed -i "s/$unique_system_name/$2/" /etc/hosts
 				else
