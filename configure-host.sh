@@ -138,50 +138,37 @@ while [ $# -gt 0 ]; do
 			
 			shift
 			;;
-		-hostentry )
-			hostscheck
-			address_check=$(grep mgmt /etc/hosts -B 1 | awk '{ print $1 }'| head -n 1)
-			if [[ ! $2 =~ ^[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*$ ]]; then
-				if [ "$unique_system_name" != "$2" ]; then
-					echo "Changing hostname entry in /etc/hosts to $unique_system_name"
-					sed -i "s/$unique_system_name/$2/" /etc/hosts
+		-hostentry )			
+			new_hostname="$2"
+			new_addr="$3"
+			
+			grep -w $new_hostname /etc/hosts > /dev/null
+			if [ $? -ne 0 ]; then
+				grep -w $new_addr /etc/hosts > /dev/null
+				if [ $? -ne 0 ]; then
+					echo "$3 $2" >> /etc/hosts	
 				else
-					echo "Host entry is already set as $2"
+					old_hostname=$(grep -w $new_addr /etc/hosts | awk '{ print $2 }') 
+					sed -i -e "s/^$new_addr[[:space:]]\+$old_hostname/$new_addr $new_hostname/" /etc/hosts
 				fi
-				
-				if [ "$address_check" != "$3" ]; then
-					echo "Changing address entry in /etc/hosts to $address_check"
-					sed -i.bak "s/$address_check/$3/" /etc/hosts
-				else
-					echo "Address entry is already set as $3"
-				fi
-				
 			else
-				if [ "$unique_system_name" != "$3" ]; then
-					echo "Changing hostname entry in /etc/hosts to $unique_system_name"
-					sed -i "s/$unique_system_name/$3/" /etc/hosts
+				grep -w $new_hostname /etc/hosts | grep -w $new_addr > /dev/null
+				if [ $? -ne 0 ]; then
+					old_addr=$(awk -v h="$new_hostname" '$2 == h { print $1 }' /etc/hosts)
+					sed -i -e "s/^$old_addr[[:space:]]\+$new_hostname/$new_addr $new_hostname/" /etc/hosts
 				else
-					echo "Host entry is already set as $3"
-				fi
-				
-				if [ "$address_check" != "$2" ]; then
-					echo "Changing address entry in /etc/hosts to $address_check"
-					sed -i.bak "s/$address_check/$2/" /etc/hosts
-				else
-					echo "Address entry is already set as $2"
+					echo "Entry already exists in /etc/hosts"
 				fi
 			fi
+			
 			shift 2
-			;;
-		-verbose )
-			echo "Verbose"
-			exit
 			;;
 		* )
 			echo "Invalid argument: '$1'"
 			display_help
 			exit 1
 			;;
+
 	esac
 	shift
 done
