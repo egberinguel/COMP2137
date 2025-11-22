@@ -27,6 +27,9 @@
 #			if an error is encountered that does not allow for file to change, exit script
 
 #	verbose:	will produce output even if no errors are encountered
+trap '' TERM HUP INT
+
+VERBOSE=false
 
 function display_help {
 	cat <<EOF
@@ -53,14 +56,15 @@ function hostscheck {
 }
 
 function ip_setting {
-	if [ ! -f /etc/netplan/*.yaml ]; then
+	netplan_files=$(ls /etc/netplan/)
+	
+	if [ ${#netplan_files[@]} -eq 0 ]; then
 		echo "There are no files existing in /etc/netplan/ ! Please ask for system administrator assistance."
 		exit 1
 	else
-		if [ $(ls -l /etc/netplan | wc -l) -gt 2 ]; then
+		if [ ${#netplan_files[@]} -ne 1 ]; then
 			echo "This script assumes there is only 1 file in /etc/netplan"
 			echo "Exiting..."
-			wait 2
 			exit 1
 		else
 			netplan_file="$(ls /etc/netplan)"
@@ -97,8 +101,9 @@ fi
 for options in "$@"; do
 	if [ "$options" = "-verbose" ]; then
 		VERBOSE=true
-	else
-		VERBOSE=false
+		vmsg "Verbose mode enabled"
+		vmsg ""
+		break
 	fi
 done
 
@@ -120,7 +125,7 @@ while [ $# -gt 0 ]; do
 			fi
 			
 			hostnamecheck
-			if [ "$hostname_check" != "$2" ]; then
+			if [ "$current_hostname" != "$2" ]; then
 				hostnamectl hostname $2
 			else
 				vmsg "Hostname is already set as $2"
@@ -133,7 +138,7 @@ while [ $# -gt 0 ]; do
 			if [ "$current_address" != "$2" ]; then
 				vmsg "Adjusting netplan configuration"
 				sed -i "s/$current_address/$2/" /etc/netplan/$netplan_file
-				netplan apply 2> /etc/null
+				netplan apply 2> /dev/null
 				if [ $? -ne 0 ]; then
 					echo "netplan failed to apply settings!"
 					mv /etc/netplan/$netplan_file".bak" /etc/netplan/$netplan_file
@@ -163,12 +168,12 @@ while [ $# -gt 0 ]; do
 				grep -w $new_addr /etc/hosts > /dev/null
 				if [ $? -ne 0 ]; then
 					vmsg "Adding $3 $2 entry to /etc/hosts"
-					echo "$3 $2" >> /etc/hosts
+					echo "$3 $2" | sudo tee -a /etc/hosts > /dev/null
 					logger "$(basename $0) adding new entry to /etc/hosts"
 				else
 					old_hostname=$(grep -w $new_addr /etc/hosts | awk '{ print $2 }') 
 					vmsg "Editing hostname in /etc/hosts"
-					sed -i -e "s/^$new_addr[[:space:]]\+$old_hostname/$new_addr $new_hostname/" /etc/hosts
+					sudo sed -i -e "s/^$new_addr[[:space:]]\+$old_hostname/$new_addr $new_hostname/" /etc/hosts
 					logger "$(basename $0) editing hostname entry in /etc/hosts"
 				fi
 			else
@@ -176,14 +181,16 @@ while [ $# -gt 0 ]; do
 				if [ $? -ne 0 ]; then
 					old_addr=$(awk -v h="$new_hostname" '$2 == h { print $1 }' /etc/hosts)
 					vmsg "Editing address in /etc/hosts"
-					sed -i -e "s/^$old_addr[[:space:]]\+$new_hostname/$new_addr $new_hostname/" /etc/hosts
+					sudo sed -i -e "s/^$old_addr[[:space:]]\+$new_hostname/$new_addr $new_hostname/" /etc/hosts
 					logger "$(basename $0) editing address entry in /etc/hosts"
 				else
-					vmsg "Entry already exists in /etc/hosts"
+					vmsg "Entry $new_addr $new_hostname already exists in /etc/hosts"
 				fi
 			fi
 			
 			shift 2
+			;;
+		-verbose )
 			;;
 		* )
 			echo "Invalid argument: '$1'"
