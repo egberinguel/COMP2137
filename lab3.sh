@@ -60,6 +60,7 @@ if [ -f ./configure-host.sh ]; then
 	
 	vmsg ""
 	vmsg "Adding new entries to local /etc/hosts file"
+	logger "$(basename $0): Adding new entries to /etc/hosts"
 	./configure-host.sh -hostentry loghost 192.168.16.3
 	./configure-host.sh -hostentry webhost 192.168.16.4
 else
