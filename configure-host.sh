@@ -30,11 +30,12 @@
 
 function display_help {
 	cat <<EOF
-$(basename $0) [-h | --help]  [-name hostname]  [-ip ip address]  [-hostentry hostname]
+$(basename $0) [-h | --help]  [-name hostname]  [-ip ip address]  [-hostentry hostname] [-verbose]
 	-h | --help	Display help and exit
 	-name		Configure hostname
 	-ip		Configure system IP address
 	-hostentry	Update system host entry
+	-verbose	Script will print debugging messages about its progress
 	
 EOF
 }
