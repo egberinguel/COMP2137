@@ -119,7 +119,7 @@ while [ $# -gt 0 ]; do
 			if [ "$unique_system_name" != "$2" ]; then
 				vmsg "Changing hostname entry in /etc/hosts"
 				sed -i "s/$unique_system_name/$2/" /etc/hosts
-				logger "$(basename $0) changing hostname entry in /etc/hosts"				
+				logger "$(basename $0): Changing hostname entry in /etc/hosts to $2"				
 			else
 				vmsg "Host entry is already set as $2"
 			fi
@@ -127,6 +127,7 @@ while [ $# -gt 0 ]; do
 			hostnamecheck
 			if [ "$current_hostname" != "$2" ]; then
 				hostnamectl hostname $2
+				logger "$(basename $0): Changing hostname to $2"
 			else
 				vmsg "Hostname is already set as $2"
 			fi
@@ -139,12 +140,13 @@ while [ $# -gt 0 ]; do
 				vmsg "Adjusting netplan configuration"
 				sed -i "s/$current_address/$2/" /etc/netplan/$netplan_file
 				netplan apply 2> /dev/null
+				logger "$(basename $0): Adjusting netplan configuration"
 				if [ $? -ne 0 ]; then
 					echo "netplan failed to apply settings!"
 					mv /etc/netplan/$netplan_file".bak" /etc/netplan/$netplan_file
 					exit 1
 				fi
-				logger "$(basename $0) adjusting netplan configuration"
+				
 			else
 				vmsg "System netplan address is already set as $2"
 			fi
@@ -152,7 +154,7 @@ while [ $# -gt 0 ]; do
 			if [ "$ip_entry" != "$2" ]; then
 				vmsg "Changing address entry in /etc/hosts"
 				sed -i.bak "s/$ip_entry/$2/" /etc/hosts
-				logger "$(basename $0) changing address entry to /etc/hosts"
+				logger "$(basename $0): Changing address entry to /etc/hosts"
 			else
 				vmsg "Host entry is already set as $2"
 			fi
@@ -169,12 +171,12 @@ while [ $# -gt 0 ]; do
 				if [ $? -ne 0 ]; then
 					vmsg "Adding $3 $2 entry to /etc/hosts"
 					echo "$3 $2" | sudo tee -a /etc/hosts > /dev/null
-					logger "$(basename $0) adding new entry to /etc/hosts"
+					logger "$(basename $0): Adding new entry to /etc/hosts"
 				else
 					old_hostname=$(grep -w $new_addr /etc/hosts | awk '{ print $2 }') 
 					vmsg "Editing hostname in /etc/hosts"
 					sudo sed -i -e "s/^$new_addr[[:space:]]\+$old_hostname/$new_addr $new_hostname/" /etc/hosts
-					logger "$(basename $0) editing hostname entry in /etc/hosts"
+					logger "$(basename $0): Editing hostname entry in /etc/hosts"
 				fi
 			else
 				grep -w $new_hostname /etc/hosts | grep -w $new_addr > /dev/null
@@ -182,7 +184,7 @@ while [ $# -gt 0 ]; do
 					old_addr=$(awk -v h="$new_hostname" '$2 == h { print $1 }' /etc/hosts)
 					vmsg "Editing address in /etc/hosts"
 					sudo sed -i -e "s/^$old_addr[[:space:]]\+$new_hostname/$new_addr $new_hostname/" /etc/hosts
-					logger "$(basename $0) editing address entry in /etc/hosts"
+					logger "$(basename $0): Editing address entry in /etc/hosts"
 				else
 					vmsg "Entry $new_addr $new_hostname already exists in /etc/hosts"
 				fi
