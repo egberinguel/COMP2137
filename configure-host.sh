@@ -84,10 +84,22 @@ function hostnamecheck {
 	fi
 }
 
+function vmsg {
+	$VERBOSE && echo "$@"
+}
+
 if [ $# -eq 0 ]; then
 	display_help
 	exit
 fi
+
+for options in "$@"; do
+	if [ "$options" = "-verbose" ]; then
+		VERBOSE=true
+	else
+		VERBOSE=false
+	fi
+done
 
 while [ $# -gt 0 ]; do
 	case "$1" in
@@ -99,17 +111,18 @@ while [ $# -gt 0 ]; do
 			hostscheck
 			
 			if [ "$unique_system_name" != "$2" ]; then
-				echo "Changing hostname entry in /etc/hosts"
+				vmsg "Changing hostname entry in /etc/hosts"
 				sed -i "s/$unique_system_name/$2/" /etc/hosts
+				logger "$(basename $0) changing hostname entry in /etc/hosts"				
 			else
-				echo "Host entry is already set as $2"
+				vmsg "Host entry is already set as $2"
 			fi
 			
 			hostnamecheck
 			if [ "$hostname_check" != "$2" ]; then
 				hostnamectl hostname $2
 			else
-				echo "Hostname is already set as $2"
+				vmsg "Hostname is already set as $2"
 			fi
 			
 			shift
@@ -117,7 +130,7 @@ while [ $# -gt 0 ]; do
 		-ip )
 			ip_setting
 			if [ "$current_address" != "$2" ]; then
-				echo "Adjusting netplan configuration"
+				vmsg "Adjusting netplan configuration"
 				sed -i "s/$current_address/$2/" /etc/netplan/$netplan_file
 				netplan apply 2> /etc/null
 				if [ $? -ne 0 ]; then
@@ -125,15 +138,17 @@ while [ $# -gt 0 ]; do
 					mv /etc/netplan/$netplan_file".bak" /etc/netplan/$netplan_file
 					exit 1
 				fi
+				logger "$(basename $0) adjusting netplan configuration"
 			else
-				echo "System netplan address is already set as $2"
+				vmsg "System netplan address is already set as $2"
 			fi
 			
 			if [ "$ip_entry" != "$2" ]; then
-				echo "Changing address entry in /etc/hosts"
+				vmsg "Changing address entry in /etc/hosts"
 				sed -i.bak "s/$ip_entry/$2/" /etc/hosts
+				logger "$(basename $0) changing address entry to /etc/hosts"
 			else
-				echo "Host entry is already set as $2"
+				vmsg "Host entry is already set as $2"
 			fi
 			
 			shift
@@ -146,18 +161,24 @@ while [ $# -gt 0 ]; do
 			if [ $? -ne 0 ]; then
 				grep -w $new_addr /etc/hosts > /dev/null
 				if [ $? -ne 0 ]; then
-					echo "$3 $2" >> /etc/hosts	
+					vmsg "Adding $3 $2 entry to /etc/hosts"
+					echo "$3 $2" >> /etc/hosts
+					logger "$(basename $0) adding new entry to /etc/hosts"
 				else
 					old_hostname=$(grep -w $new_addr /etc/hosts | awk '{ print $2 }') 
+					vmsg "Editing hostname in /etc/hosts"
 					sed -i -e "s/^$new_addr[[:space:]]\+$old_hostname/$new_addr $new_hostname/" /etc/hosts
+					logger "$(basename $0) editing hostname entry in /etc/hosts"
 				fi
 			else
 				grep -w $new_hostname /etc/hosts | grep -w $new_addr > /dev/null
 				if [ $? -ne 0 ]; then
 					old_addr=$(awk -v h="$new_hostname" '$2 == h { print $1 }' /etc/hosts)
+					vmsg "Editing address in /etc/hosts"
 					sed -i -e "s/^$old_addr[[:space:]]\+$new_hostname/$new_addr $new_hostname/" /etc/hosts
+					logger "$(basename $0) editing address entry in /etc/hosts"
 				else
-					echo "Entry already exists in /etc/hosts"
+					vmsg "Entry already exists in /etc/hosts"
 				fi
 			fi
 			
